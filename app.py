@@ -11,7 +11,7 @@ import plotly.express as px
 def search(query):
 	st.experimental_set_query_params(query=query)
 	with st.spinner('Loading Tracks...'):
-		autoencoder_path = 'data/autoencoder_256dim_time_freq_128k_20epochs'
+		autoencoder_path = 'data/autoencoder_256dim_time_freq_128k_20'
 		latent_space = LatentSpaceApp(autoencoder_path, latent_dims=256, num_tiles=64)
 		latent_space.load(autoencoder_path)
 		tab1, tab2 = st.tabs(['Song Recommendations', 'Latent Space Visualization'])
@@ -72,7 +72,7 @@ def plot_genre_space(track, this_track, latents, latent_space):
 	latents = latents[['name'] + latent_space.latent_cols + ['label']]
 
 	genres_and_tracks = pd.concat([latent_space.genres, latents, this_track_df]).reset_index(drop=True)
-	genre_map = load('data/autoencoder_256dim_time_freq_128k_20epochs/genre_map.bin')
+	genre_map = load(autoencoder_path+ '/genre_map.bin')
 	genre_map_trans = genre_map.transform(genres_and_tracks[latent_space.latent_cols])
 
 	genre_map_df = pd.DataFrame(genre_map_trans, columns=['x','y'])

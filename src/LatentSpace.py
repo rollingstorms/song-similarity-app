@@ -12,7 +12,7 @@ from joblib import dump, load
 import json
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
-
+import streamlit as st
 
 
 class LatentSpaceApp:
@@ -46,10 +46,10 @@ class LatentSpaceApp:
         self._scale = scale
         self._num_tiles = num_tiles
 
-        f = open('data/apikeys/.apikeys.json')
-        apikeys = json.load(f)
-        client_id = apikeys['clientId']
-        client_secret = apikeys['clientSecret']
+        # f = open('data/apikeys/.apikeys.json')
+        # apikeys = json.load(f)
+        client_id = st.secrets['clientId']
+        client_secret = st.secrets['clientSecret']
 
         credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
 
