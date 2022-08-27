@@ -9,7 +9,7 @@ scikit_image==0.19.3
 scikit_learn
 spotipy==2.20.0
 streamlit==1.12.0
-tensorflow-cpu
+tensorflow
 umap
 umap_learn==0.5.3
 git+https://github.com/libsndfile/libsndfile
