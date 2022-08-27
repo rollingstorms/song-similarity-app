@@ -12,4 +12,4 @@ streamlit==1.12.0
 tensorflow
 umap
 umap_learn==0.5.3
-git+https://github.com/libsndfile/libsndfile
+pysndfile
