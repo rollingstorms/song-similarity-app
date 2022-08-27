@@ -93,4 +93,3 @@ if query != '':
 	search(query)
 elif params_query != '':
 	search(params_query)
-

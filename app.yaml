@@ -1,0 +1,9 @@
+service: sonufy-app
+runtime: custom
+env: flex
+manual_scaling:
+  instances: 1
+resources:
+  cpu: 1
+  memory_gb: 1
+  disk_size_gb: 5

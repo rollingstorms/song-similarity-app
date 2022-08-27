@@ -13,6 +13,7 @@ import json
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import streamlit as st
+import os
 
 
 class LatentSpaceApp:
@@ -58,7 +59,12 @@ class LatentSpaceApp:
     
     def load(self, directory_to_load, load_full_results=False):
         try:
-            self.tracks = feather.read_feather(directory_to_load+'/tracks.feather')
+            tracks_folder = directory_to_load + '/tracks'
+            tracks_folder_list = os.listdir(tracks_folder)
+            self.tracks = pd.DataFrame()
+            for track in tracks_folder_list:
+                self.tracks = pd.concat([self.tracks, feather.read_feather(tracks_folder + "/" + track)])
+            self.tracks = self.tracks.sort_index()
             print('Loaded tracks.')
         except:
             print('Failed to load tracks.')
