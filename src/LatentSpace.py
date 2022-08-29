@@ -19,7 +19,7 @@ class LatentSpaceApp:
     
     def __init__(self,
                 autoencoder_path,
-                image_dir='data/Spotify/comp_pngs',
+                image_dir='',
                 sample_size=None,
                 latent_dims=128,
                 num_channels=1,
