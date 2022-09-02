@@ -5,77 +5,76 @@ from pyarrow import feather
 import time
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
 from sklearn.preprocessing import StandardScaler
-from src.DataGenerator import AudioDataGenerator
-from src.helper_functions import progress_bar
-from joblib import dump, load
+from src.DataGenerator import AppDataGenerator
+from joblib import load
 import json
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import streamlit as st
 import os
-
+from copy import deepcopy
 
 class LatentSpaceApp:
     
     def __init__(self,
-                autoencoder_path,
-                image_dir='',
-                sample_size=None,
-                latent_dims=128,
-                num_channels=1,
+                latent_dims=256,
                 output_size=(128,128),
-                scale=True,
-                threshold_level=0,
-                num_tiles=4):
-        self._batch_size = 1
-        self.autoencoder = tf.keras.models.load_model(autoencoder_path)
-        self.prediction_generator = AudioDataGenerator(directory=image_dir,
+                num_tiles=64):
+
+        self.prediction_generator = AppDataGenerator(
                                     image_size=(128,512),
-                                    color_mode='rgb',
-                                    batch_size=1, 
-                                    shuffle=False,
-                                    sample_size = sample_size,
-                                    output_channel_index=0,
-                                    num_output_channels=num_channels,
-                                    output_size=output_size,
-                                    threshold_level=threshold_level)
+                                    output_size=output_size)
+
         self.latent_cols = [f'latent_{i}' for i in range(latent_dims)]
-        
-        self.size = self.prediction_generator.size
-        self._num_channels = num_channels
-        self._scale = scale
         self._num_tiles = num_tiles
 
-        # f = open('data/apikeys/.apikeys.json')
+        # f = open('data/apikeys/.apikeys3.json')
         # apikeys = json.load(f)
+        # client_id = apikeys['clientId']
+        # client_secret = apikeys['clientSecret']
         client_id = st.secrets['clientId']
         client_secret = st.secrets['clientSecret']
 
         credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
 
         self._spotify = spotipy.Spotify(client_credentials_manager=credentials_manager)
+
+    @st.cache(show_spinner=False, allow_output_mutation=True)
+    def _load_autoencoder(self, directory_to_load):
+        return tf.keras.models.load_model(directory_to_load+'/encoder.h5')
+
+    # @st.cache(show_spinner=False)
+    def _load_feather(self, directory_to_load, file):
+        return feather.read_feather(directory_to_load+'/'+file)
         
-    
-    def load(self, directory_to_load, load_full_results=False):
+    def load(self, directory_to_load):
         try:
-            tracks_folder = directory_to_load + '/tracks'
-            tracks_folder_list = os.listdir(tracks_folder)
-            self.tracks = pd.DataFrame()
-            for track in tracks_folder_list:
-                self.tracks = pd.concat([self.tracks, feather.read_feather(tracks_folder + "/" + track)])
-            self.tracks = self.tracks.sort_index()
+            start = time.time()
+            self.encoder = deepcopy(self._load_autoencoder(directory_to_load))
+            print('Loaded encoder.')
+            st.write(f'encoder {round(time.time() - start, 2)}')
+        except:
+            print('Failed to load encoder.')
+
+        try:
+            start = time.time()
+            self.tracks = deepcopy(self._load_feather(directory_to_load, 'tracks.feather'))
             print('Loaded tracks.')
+            st.write(f'tracks {round(time.time() - start, 2)}')
+
         except:
             print('Failed to load tracks.')
 
         try:
-            self.genres = feather.read_feather(directory_to_load+'/genres.feather')
+            self.genres = self._load_feather(directory_to_load, 'genres.feather')
             print('Loaded genres.')
+            st.write('genres')
+
         except:
             print('Failed to load genres.')
 
         try:
-            self._scaler=load(directory_to_load+'/std_scaler.bin')
+            self._scaler = load(directory_to_load+'/std_scaler.bin')
             print('loaded scaler')
         except:
             print('Failed to load scaler.')
@@ -114,7 +113,7 @@ class LatentSpaceApp:
 
     def get_vector_from_preview_link(self, link, track_id):
         img = self.prediction_generator.get_vector_from_preview_link(link, track_id, num_tiles=self._num_tiles)
-        vector = np.array(self.autoencoder.encoder(img[0])).mean(axis=0)
+        vector = np.array(self.encoder(img[0])).mean(axis=0)
         vector = self._scaler.transform(pd.DataFrame([vector], columns=self.latent_cols))
         vector = pd.DataFrame(vector, columns=self.latent_cols)
         return vector
@@ -123,9 +122,9 @@ class LatentSpaceApp:
         id_ = self._spotify.search(query, type='track')['tracks']['items'][0]['id']
         track = self._spotify.track(id_)
         link = track['preview_url']
-        print(track['name'])
-        print(track['artists'][0]['name'])
-        print(link)
+        st.write(track['name'])
+        st.write(track['artists'][0]['name'])
+        st.write(link)
 
         if link is not None:
 
