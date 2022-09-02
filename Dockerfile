@@ -5,7 +5,6 @@ RUN pip install --upgrade pip
 RUN apt-get update && \
     apt-get install -y software-properties-common && \
     apt-get update && apt-get upgrade -y && apt-get install -y \
-	libsndfile-dev \
 	ffmpeg
 
 #Expose port 8080
@@ -27,4 +26,4 @@ COPY . /app
 WORKDIR /app
 
 #Run the application on port 8080
-ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8080", "--server.address=0.0.0.0"]
+ENTRYPOINT ["streamlit", "run", "sonufy_app.py", "--server.port=8080", "--server.address=0.0.0.0"]

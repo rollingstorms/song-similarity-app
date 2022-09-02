@@ -4,7 +4,6 @@ import requests
 import streamlit as st
 import pandas as pd
 from pyarrow import feather
-import tensorflow as tf
 import time
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
 from sklearn.preprocessing import StandardScaler
@@ -13,8 +12,6 @@ import json
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import os
-from random import shuffle, sample
-import concurrent.futures
 
 
 class AudioSpectrogramConverter:
@@ -78,18 +75,16 @@ class AudioSpectrogramConverter:
         os.remove(filename)
 
     def _save_spectrogram(self, mel, file_id):
-        try:
-            os.mkdir(self.save_folder + '/mels')
-        except:
-            pass
+
+        create_new_directories(self.save_folder + '/mels')
+
         npy_filename = self.save_folder + f'/mels/{file_id}.npy'
         np.save(npy_filename, mel)
 
     def convert(self, link, file_id=None, save=False):
-        try:
-            os.mkdir(self.save_folder + '/mp3s')
-        except:
-            pass
+
+        create_new_directories(self.save_folder + '/mp3s')
+
         filename = self.save_folder + f'/mp3s/{file_id}.mp3'
         self._download_link_to_file(link, filename)
         mel = self._convert_mp3_to_mel(filename)
@@ -116,7 +111,8 @@ class Sonufy:
                  n_mel_freq_components=64,
                  shorten_factor=10,
                  start_freq=20,
-                 end_freq=16000):
+                 end_freq=16000,
+                 final_shorten_factor=1):
 
         self.latent_dims = latent_dims
         
@@ -133,8 +129,7 @@ class Sonufy:
         self.start_freq = start_freq  # Hz # What frequency to start sampling our melS from
         self.end_freq = end_freq
 
-        if all_tracks_file != None:
-            self.load_tracks_db(all_tracks_file)
+        self.final_shorten_factor = final_shorten_factor
 
         self.latent_cols = [f'latent_{i}' for i in range(self.latent_dims)]
 
@@ -166,12 +161,12 @@ class Sonufy:
         #     pass
 
         self.asc = AudioSpectrogramConverter(save_folder=save_folder, 
-                                        fft_size=2048,
-                                        spec_thresh=4,
-                                        n_mel_freq_components=64,
-                                        shorten_factor=10,
-                                        start_freq=20,
-                                        end_freq=16000)
+                                        fft_size=self.fft_size,
+                                        spec_thresh=self.spec_thresh,
+                                        n_mel_freq_components=self.n_mel_freq_components,
+                                        shorten_factor=self.shorten_factor,
+                                        start_freq=self.start_freq,
+                                        end_freq=self.end_freq)
 
         
         indices = df.index
@@ -194,6 +189,8 @@ class Sonufy:
 
     
     def build_model(self, learning_rate=1e-3):
+
+        import tensorflow as tf
 
         #load model class
         from src.model import Time_Freq_Autoencoder
@@ -221,11 +218,15 @@ class Sonufy:
 
     def load_full_model(self, save_folder):
 
+        import tensorflow as tf
+
         self.autoencoder = tf.keras.models.load_model(save_folder)
 
         print(f'Autoencoder loaded from "{save_folder}".')
     
     def save_encoder(self, save_folder):
+
+        import tensorflow as tf
 
         create_new_directories(save_folder)
         
@@ -240,22 +241,31 @@ class Sonufy:
 
         print(f'Encoder saved to "{save_folder}".')
 
+        self.load_encoder(save_folder)
+
     def load_encoder(self, save_folder, app=False):
 
         if app:
-            
+
             import tflite_runtime.interpreter as tflite
 
             self.interpreter = tflite.Interpreter(save_folder+'/encoder.tflite')
 
         else:
+
+            import tensorflow as tf
+
             self.interpreter = tf.lite.Interpreter(save_folder+'/encoder.tflite')
 
-    def build_vectors_from_model(self, mel_directory, sample_size=None):
+    def build_vectors_from_model(self, mel_directory, all_tracks_file, sample_size=None):
+        from src.AppAudioDataGenerator import AppAudioDataGenerator
+
+        self.load_tracks_db(all_tracks_file)
+
         #create prediction generator
         input_size = self._get_input_shape(mel_directory)
 
-        self.prediction_generator = AudioDataGenerator(batch_size=1, input_size=input_size, output_size=(self.image_height, self.image_width), directory=mel_directory, shuffle=False, train_test_split=False, sample_size=sample_size)
+        self.prediction_generator = AppAudioDataGenerator(batch_size=1, input_size=input_size, output_size=(self.image_height, self.image_width), directory=mel_directory, shuffle=False, sample_size=sample_size, shorten_factor=self.final_shorten_factor)
         
         print('Getting predictions from autoencoder...')
         start_time = time.time()
@@ -357,6 +367,8 @@ class Sonufy:
     
     def train(self, mel_directory, epochs, train_test_split=0.2, sample_size=None):
 
+        from src.AudioDataGenerator import AudioDataGenerator
+
         #check for loaded/built model
 
         #add later
@@ -364,7 +376,7 @@ class Sonufy:
         #create train test generator
         input_size = self._get_input_shape(mel_directory)
 
-        self.train_test_generator = AudioDataGenerator(batch_size=self.batch_size, input_size=input_size, output_size=(self.image_height, self.image_width), directory=mel_directory, shuffle=True, train_test_split=True, test_size=train_test_split, sample_size=sample_size)
+        self.train_test_generator = AudioDataGenerator(batch_size=self.batch_size, input_size=input_size, output_size=(self.image_height, self.image_width), directory=mel_directory, shuffle=True, train_test_split=True, test_size=train_test_split, sample_size=sample_size, shorten_factor=self.final_shorten_factor)
 
         #train
         self.history_ = self.autoencoder.fit(self.train_test_generator.train,
@@ -384,6 +396,8 @@ class Sonufy:
         return input_shape
     
     def search_for_recommendations(self, query, num=10, popularity_threshold=10, get_time_and_freq=False, save_folder='data'):
+        
+        from src.AppAudioDataGenerator import AppAudioDataGenerator
 
         create_new_directories(save_folder)
 
@@ -395,20 +409,25 @@ class Sonufy:
         if link is not None:
             #convert query to mel
             self.asc = AudioSpectrogramConverter(save_folder=save_folder, 
-                                        fft_size=2048,
-                                        spec_thresh=4,
-                                        n_mel_freq_components=64,
-                                        shorten_factor=10,
-                                        start_freq=20,
-                                        end_freq=16000)
+                                        fft_size=self.fft_size,
+                                        spec_thresh=self.spec_thresh,
+                                        n_mel_freq_components=self.n_mel_freq_components,
+                                        shorten_factor=self.shorten_factor,
+                                        start_freq=self.start_freq,
+                                        end_freq=self.end_freq)
+
             mel = self.asc.convert(link=link, file_id=track['id'])
 
-            prediction_gen = AudioDataGenerator(batch_size=1, input_size=(mel.shape[0], mel.shape[0]), output_size=(self.image_height, self.image_width), directory='/')
+            prediction_gen = AppAudioDataGenerator(batch_size=1, input_size=(mel.shape[0], mel.shape[0]), output_size=(self.image_height, self.image_width), shorten_factor=self.shorten_factor)
 
             mel_batch = prediction_gen.get_tensors_from_data(data=mel, num_tiles=self.num_tiles)
 
+            mel_batch = np.array(mel_batch)
+
+            mel_batch = self._scaler.transform([self.run_inference(mel_batch[0]).mean(axis=0)])
+
             #get model prediciton of query
-            vector = pd.DataFrame([self.run_inference(mel_batch[0]).mean(axis=0)], columns=self.latent_cols)
+            vector = pd.DataFrame(mel_batch, columns=self.latent_cols)
 
             #get similarity
             similarity = self.get_similarity(vector, self.tracks, subset=self.latent_cols, num=50, popularity_threshold=popularity_threshold)
@@ -433,7 +452,6 @@ class Sonufy:
         # input shape == (1, height, width, 1)
 
         X = X.astype(np.float32)
-        # X = np.expand_dims(X, axis=0)
 
         input_details = self.interpreter.get_input_details()
         output_details = self.interpreter.get_output_details()
@@ -441,7 +459,8 @@ class Sonufy:
 
         self.interpreter.resize_tensor_input(input_details[0]['index'], (X.shape[0], input_shape[1], input_shape[2], input_shape[3]))
         self.interpreter.allocate_tensors()
-        # pass x through encoder
+
+        # pass X through encoder
         self.interpreter.set_tensor(input_details[0]['index'], X)
         self.interpreter.invoke()
 
@@ -474,179 +493,6 @@ class Sonufy:
 
     def plot_genre_space(self, track, recommendations):
         pass
-    
-class AudioDataGenerator(tf.keras.utils.Sequence):
-    
-    def __init__(self,
-                 batch_size,
-                 input_size,
-                 output_size,
-                 directory,
-                 shuffle=False,
-                 sample_size=None,
-                 train_test_split=False,
-                 test_size=.2,
-                 name='prediction',
-                 file_list=None):
-
-        self.batch_size = batch_size
-
-        self.input_size = input_size
-
-        self.image_height = output_size[0]
-        self.image_width = output_size[1]
-
-        self.dir = directory
-
-        self.shuffle = shuffle
-
-        self.sample_size = sample_size
-        
-        self.test_size = test_size
-
-        
-
-        if file_list == None:
-            if self.dir != None:
-                self.files = self.__get_files_from_directory()
-        else:
-            try:
-                self.files = self.__collect_npy_files(file_list)
-            except TypeError:
-                print('file_list is not a list')
-
-        if train_test_split:
-            self.__train_test_split(self.files)
-
-        else:
-            print(f'Found {len(self.files)} files for {name} set')
-
-        self.size = len(self.files)
-
-    def __get_files_from_directory(self):
-        files = os.listdir(self.dir)
-
-        files = self.__collect_npy_files(files)
-
-        if self.shuffle:
-            shuffle(files)
-        
-        if self.sample_size != None:
-            files = sample(files, self.sample_size)
-
-        return files
-
-    def __collect_npy_files(self, files):
-        filetypes = ['npy']
-        return [file for file in files if file.split('.')[-1] in filetypes]
-
-    def __train_test_split(self, files):
-        
-        if self.shuffle:
-            shuffle(files)
-            
-        file_list_length = len(files)
-        test_split = int(file_list_length * (1 - self.test_size))
-        
-        train_files = files[:test_split]
-        test_files = files[test_split:]
-        
-        self.train = AudioDataGenerator(batch_size=self.batch_size,
-                                        input_size=self.input_size,
-                                        output_size=(self.image_height, self.image_width),
-                                        directory=self.dir,
-                                        shuffle=self.shuffle,
-                                        name='training',
-                                        file_list=train_files)
-        
-        self.test = AudioDataGenerator(batch_size=self.batch_size,
-                                       input_size=self.input_size,
-                                       output_size=(self.image_height, self.image_width),
-                                       directory=self.dir,
-                                       shuffle=self.shuffle,
-                                       name='testing',
-                                       file_list=test_files)        
-
-    def __len__(self):
-        return len(self.files) // self.batch_size
-
-    def __getitem__(self, index=0, data=None, num_tiles=None, return_filename=False):
-        
-        if type(data).__module__ == np.__name__:
-            batch = self.convert_data_to_tensor(data)
-            X = np.expand_dims(batch, axis=0)
-            X = np.expand_dims(X, axis=3)
-            y = X
-        elif data == None:
-            batch = self.files[index*self.batch_size:index*self.batch_size+self.batch_size]
-            X, y = self.__getdata(batch)
-        else:
-            raise TypeError('data must be a np.array or "None"')
-
-        scale = 4.25
-        X = (X + scale) / scale
-        y = (y + scale) / scale
-
-        original_height = X.shape[1]
-        original_width = X.shape[2]
-
-        if num_tiles == None:
-            if self.image_width < original_width:
-                rand_x_index = np.random.randint(low=0, high=original_width - self.image_width)
-            else:
-                rand_x_index = 0
-
-            X = X[:,0:self.image_height,rand_x_index:rand_x_index+self.image_width,:]
-            y = X
-        else:
-            if num_tiles > 1: 
-                slice_size = (original_width - self.image_width) // (num_tiles - 1)
-            else:
-                slice_size = 0
-
-            all_tiles = []
-            new_batch = []
-            for idx, img in enumerate(X):
-                for i in range(num_tiles):
-                    all_tiles.append(img[:,i*slice_size:(i*slice_size)+self.image_width,:])
-                    new_batch.append(batch[idx])
-                        
-            X = np.array(all_tiles)
-            y = X
-        if return_filename:
-            return X, y, batch
-        else:
-            return X, y
-
-    def on_epoch_end(self):
-        if self.shuffle:
-            shuffle(self.files)
-
-
-    def __getdata(self, batch):
-
-        X = np.empty((self.batch_size, self.input_size[0], self.input_size[1], 1))
-
-        for i, file in enumerate(batch):
-            mel = np.load(self.dir + '/' + file, allow_pickle=True)
-            mel = np.expand_dims(mel, axis=2)
-            if mel.shape[1] < self.input_size[1]:
-                mel_add = mel[:,:self.input_size[1]-mel.shape[1],:]
-                mel = np.concatenate((mel, mel_add), axis=1)
-            X[i,] = tf.convert_to_tensor(mel)
-            
-        y = X
-
-        return X, y
-
-    def convert_data_to_tensor(self, data):
-        return tf.convert_to_tensor(data)
-
-    def take(self, index, num_tiles=None, return_filename=False):
-        return self.__getitem__(index=index, num_tiles=num_tiles, return_filename=return_filename)
-
-    def get_tensors_from_data(self, data, num_tiles):
-        return self.__getitem__(data=data, num_tiles=num_tiles)
 
 def create_new_directories(save_folder):
 
