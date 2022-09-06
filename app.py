@@ -8,9 +8,10 @@ from copy import deepcopy
 
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
 def load_sonufy():
+	model_path = 'test_128dim_newmels'
 	sonufy = Sonufy(latent_dims=128, output_size=(64,64))
-	sonufy.load_encoder('test_encoder_128_sf1', app=True)
-	sonufy.load_db('test_db_128_sf1')
+	sonufy.load_encoder(model_path, app=True)
+	sonufy.load_db(model_path)
 
 	return sonufy
 
