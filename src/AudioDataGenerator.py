@@ -90,7 +90,8 @@ class AudioDataGenerator(tf.keras.utils.Sequence):
                                         directory=self.dir,
                                         shuffle=self.shuffle,
                                         name='training',
-                                        file_list=train_files)
+                                        file_list=train_files,
+                                        shorten_factor=self.shorten_factor)
         
         self.test = AudioDataGenerator(batch_size=self.batch_size,
                                        input_size=self.input_size,
@@ -98,7 +99,8 @@ class AudioDataGenerator(tf.keras.utils.Sequence):
                                        directory=self.dir,
                                        shuffle=self.shuffle,
                                        name='testing',
-                                       file_list=test_files)        
+                                       file_list=test_files,
+                                       shorten_factor=self.shorten_factor)        
 
     def __len__(self):
         return len(self.files) // self.batch_size
@@ -116,9 +118,6 @@ class AudioDataGenerator(tf.keras.utils.Sequence):
         else:
             raise TypeError('data must be a np.array or "None"')
 
-        scale = 4.25
-        X = (X + scale) / scale
-        y = (y + scale) / scale
 
         original_height = X.shape[1]
         original_width = X.shape[2]
@@ -164,10 +163,9 @@ class AudioDataGenerator(tf.keras.utils.Sequence):
             mel = np.load(self.dir + '/' + file, allow_pickle=True)
             if self.shorten_factor != 1:
                 mel = skimage.transform.resize(mel, (self.input_size[0], self.input_size[1]))
-            mel = np.expand_dims(mel, axis=2)
             if mel.shape[1] < self.input_size[1]:
-                mel_add = mel[:,:self.input_size[1]-mel.shape[1],:]
-                mel = np.concatenate((mel, mel_add), axis=1)
+                mel = skimage.transform.resize(mel, (self.input_size[0], self.input_size[1]))
+            mel = np.expand_dims(mel, axis=2)
             X[i,] = tf.convert_to_tensor(mel)
             
         y = X

@@ -86,7 +86,7 @@ def stft(
     return X
 
 
-def pretty_spectrogram(d, log=True, thresh=5, fft_size=512, step_size=64):
+def pretty_spectrogram(d, log=True, thresh=5, fft_size=512, step_size=64, scale=True):
     """
     creates a spectrogram
     log: take the log of the spectrgram
@@ -97,8 +97,10 @@ def pretty_spectrogram(d, log=True, thresh=5, fft_size=512, step_size=64):
     )
 
     if log == True:
-        specgram /= specgram.max()  # volume normalize to max 1
+        if scale:
+            specgram /= specgram.max()  # volume normalize to max 1
         specgram = np.log10(specgram)  # take log
+        
         specgram[
             specgram < -thresh
         ] = -thresh  # set anything less than the threshold as the threshold

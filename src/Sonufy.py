@@ -51,7 +51,7 @@ class AudioSpectrogramConverter:
         with open(filename, 'wb') as f:
             f.write(r.content)
     
-    def _convert_mp3_to_mel(self, file):
+    def _convert_mp3_to_mel(self, file, scale=True, log=True):
 
         track = AudioSegment.from_mp3(file)
 
@@ -63,8 +63,9 @@ class AudioSpectrogramConverter:
             samples[:,0].astype("float64"),
             fft_size=self.fft_size,
             step_size=self.step_size,
-            log=True,
+            log=log,
             thresh=self.spec_thresh,
+            scale=scale
         )
 
         mel_spec = make_mel(wav_spectrogram, self.mel_filter, shorten_factor=self.shorten_factor)
@@ -81,14 +82,20 @@ class AudioSpectrogramConverter:
         npy_filename = self.save_folder + f'/mels/{file_id}.npy'
         np.save(npy_filename, mel)
 
-    def convert(self, link, file_id=None, save=False):
+    def convert(self, link, file_id=None, save=False, scale=True, log=False, save_mp3=False):
 
         create_new_directories(self.save_folder + '/mp3s')
 
         filename = self.save_folder + f'/mp3s/{file_id}.mp3'
         self._download_link_to_file(link, filename)
-        mel = self._convert_mp3_to_mel(filename)
-        self._delete_audio_file(filename)
+        mel = self._convert_mp3_to_mel(filename, scale=scale, log=log)
+        if log == False:
+            mel = np.maximum(mel, 1)
+            mel = (20.0 * np.log10(np.maximum(1e-10, mel)))/50
+            mel = np.minimum(mel, 1)
+
+        if save_mp3 != True:
+            self._delete_audio_file(filename)
 
         if np.isnan(mel.max()):
             return np.zeros_like(mel)
@@ -103,15 +110,13 @@ class Sonufy:
     def __init__(self,
                  latent_dims,
                  output_size,
-                 batch_size=128,
-                 all_tracks_file=None,
                  num_tiles=32,
                  fft_size=2048,
-                 spec_thresh=4,
+                 spec_thresh=1,
                  n_mel_freq_components=64,
                  shorten_factor=10,
                  start_freq=20,
-                 end_freq=16000,
+                 end_freq=8000,
                  final_shorten_factor=1):
 
         self.latent_dims = latent_dims
@@ -119,7 +124,6 @@ class Sonufy:
         self.image_height = output_size[0]
         self.image_width = output_size[1]
         self.num_tiles = num_tiles
-        self.batch_size = batch_size
 
         self.fft_size = fft_size  # window size for the FFT
         self.spec_thresh = spec_thresh  # threshold for spectrograms (lower filters out more noise)
@@ -146,9 +150,9 @@ class Sonufy:
         self.all_tracks = self.all_tracks[~self.all_tracks.track_preview_link.isna()].reset_index(drop=True)
 
 
-    def download_links(self, save_folder):
+    def download_links(self, save_folder, all_tracks_file):
 
-        df = self.all_tracks.copy()
+        self.load_tracks_db(all_tracks_file)
 
         create_new_directories(save_folder)
         # try:
@@ -183,12 +187,12 @@ class Sonufy:
 
         row = self.all_tracks.iloc[index]
 
-        self.asc.convert(link=row.track_preview_link, file_id=row.track_id, save=True)
+        self.asc.convert(link=row.track_preview_link, file_id=row.track_id, save=True, log=False, scale=False)
 
         print(index, end='\r')
 
     
-    def build_model(self, learning_rate=1e-3):
+    def build_model(self, learning_rate=1e-3, filters=(16,32,64)):
 
         import tensorflow as tf
 
@@ -197,12 +201,11 @@ class Sonufy:
 
         #build/compile
         #save as self.autoencoder
-        self.autoencoder = Time_Freq_Autoencoder(image_width=self.image_width, image_height=self.image_height, latent_dim=self.latent_dims, kernel_size=5)
+        self.autoencoder = Time_Freq_Autoencoder(image_width=self.image_width, image_height=self.image_height, latent_dim=self.latent_dims, kernel_size=5, filters=filters)
         
         from tensorflow.keras.optimizers import Adam
-        from tensorflow.keras.callbacks import EarlyStopping
 
-        self.opt = Adam(learning_rate=learning_rate, clipnorm=0.5)
+        self.opt = Adam(learning_rate=learning_rate)
 
         self.autoencoder.compile(optimizer=self.opt, loss=tf.keras.losses.mse)
 
@@ -257,6 +260,47 @@ class Sonufy:
 
             self.interpreter = tf.lite.Interpreter(save_folder+'/encoder.tflite')
 
+
+    def save(self, save_folder):
+        try:
+            self.save_full_model(save_folder)
+            print('saved full model')
+        except:
+            print('failed to save full model')
+        try:
+            self.save_encoder(save_folder)
+            print('saved encoder')
+        except:
+            print('failed to save encoder')
+        try:
+            self.save_db(save_folder)
+            print('saved database files')
+        except:
+            print('failed to save database files')
+
+        print(f'Saved full model, encoder, and database files in {save_folder}.')
+
+    def load(self, save_folder):
+
+        try:
+            self.load_full_model(save_folder)
+            print('loaded full model')
+        except:
+            print('failed to load full model')
+
+        try:
+            self.load_encoder(save_folder)
+            print('loaded encoder')
+        except:
+            print('failed to load encoder')
+
+        try:
+            self.load_db(save_folder)
+            print('loaded database files')
+        except:
+            print('failed to load database files')
+
+    
     def build_vectors_from_model(self, mel_directory, all_tracks_file, sample_size=None):
         from src.AppAudioDataGenerator import AppAudioDataGenerator
 
@@ -365,7 +409,7 @@ class Sonufy:
         except:
             print('Failed to load scaler.')
     
-    def train(self, mel_directory, epochs, train_test_split=0.2, sample_size=None):
+    def train(self, mel_directory, epochs, train_test_split=0.2, sample_size=None, batch_size=32):
 
         from src.AudioDataGenerator import AudioDataGenerator
 
@@ -376,11 +420,11 @@ class Sonufy:
         #create train test generator
         input_size = self._get_input_shape(mel_directory)
 
-        self.train_test_generator = AudioDataGenerator(batch_size=self.batch_size, input_size=input_size, output_size=(self.image_height, self.image_width), directory=mel_directory, shuffle=True, train_test_split=True, test_size=train_test_split, sample_size=sample_size, shorten_factor=self.final_shorten_factor)
+        self.train_test_generator = AudioDataGenerator(batch_size=batch_size, input_size=input_size, output_size=(self.image_height, self.image_width), directory=mel_directory, shuffle=True, train_test_split=True, test_size=train_test_split, sample_size=sample_size, shorten_factor=self.final_shorten_factor)
 
         #train
         self.history_ = self.autoencoder.fit(self.train_test_generator.train,
-                       batch_size=self.batch_size,
+                       batch_size=batch_size,
                        epochs=epochs,
                        validation_data=self.train_test_generator.test)
 

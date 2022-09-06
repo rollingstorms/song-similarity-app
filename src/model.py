@@ -65,10 +65,10 @@ class Time_Freq_Autoencoder_Builder:
 
 class Time_Freq_Autoencoder(tf.keras.Model):
     
-    def __init__(self, image_width, image_height, image_depth=1, latent_dim=256, kernel_size=5):
+    def __init__(self, image_width, image_height, image_depth=1, latent_dim=256, kernel_size=5, filters=(16,32,64)):
         super().__init__()
         
-        self.encoder, self.decoder, self.autoencoder = Time_Freq_Autoencoder_Builder.build(width=image_width, height=image_height, depth=image_depth, latent_dim=latent_dim, kernel_size=kernel_size)
+        self.encoder, self.decoder, self.autoencoder = Time_Freq_Autoencoder_Builder.build(width=image_width, height=image_height, depth=image_depth, latent_dim=latent_dim, kernel_size=kernel_size, filters=filters)
         
     def call(self, x):
         autoencoded = self.autoencoder(x)
