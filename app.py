@@ -6,7 +6,7 @@ import plotly.express as px
 import time
 from copy import deepcopy
 
-@st.cache(allow_output_mutation=True)
+@st.cache(allow_output_mutation=True, suppress_st_warning=True)
 def load_sonufy():
 	sonufy = Sonufy(latent_dims=128, output_size=(64,64))
 	sonufy.load_encoder('test_encoder_128_sf1', app=True)
