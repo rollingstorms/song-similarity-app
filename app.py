@@ -92,7 +92,7 @@ try:
 except:
 	params_query = ''
 # st.header('Sonufy')
-logo_image, logo_text = st.columns(1,3)
+logo_image, logo_text = st.columns((1,3))
 with logo_image:
 	st.image('img/logo.svg')
 with logo_text:
