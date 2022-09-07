@@ -90,7 +90,7 @@ try:
 except:
 	params_query = ''
 # st.header('Sonufy')
-st.image('data/img_working/sonufy_logo.png')
+st.image('data/img_working/sonufy_logo.png', width=400)
 query = st.text_input('search for a track on Spotify to hear similar songs:', value='')
 if query != '':
 	search(query)
