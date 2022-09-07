@@ -1,0 +1,1 @@
+{"url":"postgres://unoqqugpqhyvbm:1a6fc5e33349ebd2f89efdce4b0dc4610dae9b44fb259e8a34ff5e34253657f3@ec2-44-207-253-50.compute-1.amazonaws.com:5432/dbk3jsvj3jru4l"}

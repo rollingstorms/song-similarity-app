@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import skimage
+from random import sample
 
 class AppAudioDataGenerator():
     
@@ -67,10 +68,7 @@ class AppAudioDataGenerator():
         else:
             raise TypeError('data must be a np.array or "None"')
 
-        # scale = 4.25
-        # X = (X + scale) / scale
-        # y = (y + scale) / scale
-
+       
         original_height = X.shape[1]
         original_width = X.shape[2]
 

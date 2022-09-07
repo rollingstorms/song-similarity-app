@@ -12,6 +12,7 @@ import json
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import os
+from random import sample
 
 
 class AudioSpectrogramConverter:
@@ -347,6 +348,7 @@ class Sonufy:
         track_latents[self.latent_cols] = track_latent_scaled.astype(np.float16)
 
         self.tracks = track_latents
+
         print(f'Track dataframe built. {round((time.time()-start_time)/60,2)} minutes elapsed')
         #build genre space from base genres
         start_time = time.time()
