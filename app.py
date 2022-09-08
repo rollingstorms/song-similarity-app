@@ -93,12 +93,12 @@ except:
 	params_query = ''
 # st.header('Sonufy')
 logo_image, logo_text = st.columns((1,3))
-st.write('<div class="logo">', unsafe_allow_html=True)
+st.write('<div class="logo">hi im a logo</div>', unsafe_allow_html=True)
 with logo_image:
 	st.image('img/logo.png')
 with logo_text:
 	st.image('img/sonufy.png')
-st.write('</div>', unsafe_allow_html=True)
+
 query = st.text_input('search for a track on Spotify to hear similar songs:', value='')
 if query != '':
 	search(query)
