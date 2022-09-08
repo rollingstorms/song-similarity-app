@@ -50,7 +50,7 @@ def search(query):
 			# st.header('Genres in the Sonic Landscape')
 			# st.subheader(track['name'] + ' by ' + track['artists'][0]['name'])
 			# st.plotly_chart(fig, use_container_width=True)
-			st.write('Using dimensionality reduction, basic genres and similar songs can be plotted in a visualization of the latent space that is created by an encoder.')
+			# st.write('Using dimensionality reduction, basic genres and similar songs can be plotted in a visualization of the latent space that is created by an encoder.')
 
 		time.sleep(.5)
 		status.empty()
