@@ -8,8 +8,8 @@ from copy import deepcopy
 
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
 def load_sonufy():
-	model_path = 'test_64dim'
-	sonufy = Sonufy(latent_dims=64, output_size=(64,64))
+	model_path = 'model'
+	sonufy = Sonufy(latent_dims=128, output_size=(64,64))
 	sonufy.load_encoder(model_path, app=True)
 	sonufy.load_db(model_path)
 
