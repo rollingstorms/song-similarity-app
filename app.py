@@ -95,10 +95,10 @@ except:
 logo_image, logo_text = st.columns((1,3))
 
 with logo_image:
-	st.write('<div class="logo">hi im a logo', unsafe_allow_html=True)
+	st.write('<div class="logo"></div>', unsafe_allow_html=True)
 	st.image('img/logo.png')
-	st.write('</div>', unsafe_allow_html=True)
 with logo_text:
+	st.write('<div class="logo"></div>', unsafe_allow_html=True)
 	st.image('img/sonufy.png')
 
 query = st.text_input('search for a track on Spotify to hear similar songs:', value='')
