@@ -105,7 +105,7 @@ except:
 logo_image, logo_text = st.columns((1,3))
 
 st.write("""<style>.css-ocqkz7:has(div.logo){align-items: center;}
-	.e1tzin5v0:has(div.logo) .etr89bj2{justify-content: center;}</style>""")
+	.e1tzin5v0:has(div.logo) .etr89bj2{justify-content: center;}</style>""", unsafe_allow_html=True)
 
 with logo_image:
 	st.write('<div class="logo"></div>', unsafe_allow_html=True)
