@@ -12,7 +12,7 @@ import json
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import os
-from random import sample
+
 
 
 class AudioSpectrogramConverter:
@@ -367,6 +367,8 @@ class Sonufy:
         print(f'Genre distributions built. {round((time.time()-start_time)/60,2)} minutes elapsed')
         
         self.genres = genre_latents
+
+        self.tracks = self.tracks.drop(columns=['artist_genres'])
         
         print('Latent Space Built.')
 
