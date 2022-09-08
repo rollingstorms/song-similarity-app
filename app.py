@@ -84,7 +84,16 @@ def display_song(index, track_id, track_name, artist, similarity=None, time_simi
 		if freq_similarity != None:
 			st.write(f'Frequency Similarity: {round(freq_similarity,2)}')
 	with end:
-		components.iframe(f'https://open.spotify.com/embed/track/{track_id}', width=250, height=250)
+		embed_script = f"""
+		window.onSpotifyIframeApiReady = (IFrameAPI) => \{
+		  let element = document.getElementById('embed-iframe');
+		  let options = \{
+		      uri: 'spotify:episode:{track_id}'
+		    \};
+		  let callback = (EmbedController) => \{\};
+		  IFrameAPI.createController(element, options, callback);
+		\};"""
+		# components.iframe(f'https://open.spotify.com/embed/track/{track_id}', width=250, height=250)
 
 try:
 	params = st.experimental_get_query_params()
