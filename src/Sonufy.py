@@ -318,7 +318,10 @@ class Sonufy:
         results = []
         for i in range(self.prediction_generator.size):
             latent_img, _, filename = self.prediction_generator.take(i, num_tiles=self.num_tiles, return_filename=True)
+            # latent_img, _, filename = self.prediction_generator.take(i, num_tiles=None, return_filename=True)
+
             latent_space = self.run_inference(latent_img).mean(axis=0)
+            # latent_space = self.run_inference(latent_img)[0]
 
             result={
                 'track_id':filename[0].split('.')[0],
@@ -341,6 +344,8 @@ class Sonufy:
         track_latents = results_df.merge(self.all_tracks, how='left', left_on='track_id', right_on='track_id')
         track_latents = track_latents.drop_duplicates(subset='track_id')
         track_latents = track_latents.reset_index(drop=True)
+
+        self.tracks = track_latents
 
         
         self._scaler = StandardScaler()
@@ -469,10 +474,13 @@ class Sonufy:
             prediction_gen = AppAudioDataGenerator(batch_size=1, input_size=(mel.shape[0], mel.shape[0]), output_size=(self.image_height, self.image_width), shorten_factor=self.shorten_factor)
 
             mel_batch = prediction_gen.get_tensors_from_data(data=mel, num_tiles=self.num_tiles)
+            # mel_batch = prediction_gen.get_tensors_from_data(data=mel, num_tiles=None)
+
 
             mel_batch = np.array(mel_batch)
 
             mel_batch = self._scaler.transform([self.run_inference(mel_batch[0]).mean(axis=0)])
+            # mel_batch = self._scaler.transform(self.run_inference(mel_batch[0]))
 
             #get model prediciton of query
             vector = pd.DataFrame(mel_batch, columns=self.latent_cols)

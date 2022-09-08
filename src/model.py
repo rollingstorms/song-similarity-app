@@ -19,19 +19,36 @@ class Time_Freq_Autoencoder_Builder:
         
         x_time = Reshape(target_shape=(height,width))(inputs)
         x_freq = Reshape(target_shape=(height,width))(tf.transpose(inputs, perm=[0,2,1,3]))
+
+        current_shape = [input_shape[0],input_shape[1]]
         
         for f in filters:
             
             x_time = Conv1D(f, kernel_size=kernel_size, strides=strides, padding='same', activation='relu')(x_time)
             x_time = BatchNormalization(axis=chan_dim)(x_time)
+
+            current_shape[1] = f
+            current_shape[0] //=2
+            x_time = Flatten()(x_time)
+            x_time = Dense(current_shape[0]*current_shape[1])(x_time)
+            x_time = Reshape(current_shape)(x_time)
+
             
         x_time = Flatten()(x_time)
         latent_time = Dense(latent_dim//2)(x_time)
         
+        current_shape = [input_shape[0],input_shape[1]]
+
         for f in filters:
             
             x_freq = Conv1D(f, kernel_size=kernel_size, strides=strides, padding='same', activation='relu')(x_freq)
             x_freq = BatchNormalization(axis=chan_dim)(x_freq)
+
+            current_shape[1] = f
+            current_shape[0] //=2
+            x_time = Flatten()(x_time)
+            x_time = Dense(current_shape[0]*current_shape[1])(x_time)
+            x_time = Reshape(current_shape)(x_time)
             
         x_freq = Flatten()(x_freq)
         latent_freq = Dense(latent_dim//2)(x_freq)

@@ -80,6 +80,18 @@ class AppAudioDataGenerator():
 
             X = X[:,0:self.image_height,rand_x_index:rand_x_index+self.image_width,:]
             y = X
+            # new_X = np.empty((self.batch_size, self.image_height, self.image_width, 1))
+
+            # slice_size = (original_width - self.image_width) // (64 - 1)
+            
+            # for idx, img in enumerate(X):
+            #     all_tiles=[]
+            #     for i in range(64):
+            #         all_tiles.append(img[:,i*slice_size:(i*slice_size)+self.image_width,:])
+            #     new_X[idx] = np.rot90(np.array(all_tiles).mean(axis=2), 3)
+            
+            # X = new_X
+            # y = X
         else:
             if num_tiles > 1: 
                 slice_size = (original_width - self.image_width) // (num_tiles - 1)

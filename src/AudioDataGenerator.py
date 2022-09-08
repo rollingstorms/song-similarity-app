@@ -112,6 +112,7 @@ class AudioDataGenerator(tf.keras.utils.Sequence):
             X = np.expand_dims(batch, axis=0)
             X = np.expand_dims(X, axis=3)
             y = X
+
         elif data == None:
             batch = self.files[index*self.batch_size:index*self.batch_size+self.batch_size]
             X, y = self.__getdata(batch)
@@ -124,12 +125,33 @@ class AudioDataGenerator(tf.keras.utils.Sequence):
 
         if num_tiles == None:
             if self.image_width < original_width:
-                rand_x_index = np.random.randint(low=0, high=original_width - self.image_width)
+                phase_max = 32
+                x_plus = np.random.randint(low=-phase_max, high=phase_max)
+                width_diff = original_width - self.image_width
+                # rand_x_index = np.random.randint(low=np.maximum(0,-x_plus), high=np.minimum(width_diff, width_diff-x_plus))
+                rand_x_index = np.random.randint(low=0, high=width_diff)
+
             else:
                 rand_x_index = 0
+                x_plus = 0
 
             X = X[:,0:self.image_height,rand_x_index:rand_x_index+self.image_width,:]
+            # y = y[:,0:self.image_height,rand_x_index+x_plus:rand_x_index+x_plus+self.image_width,:]
             y = X
+
+            # new_X = np.empty((self.batch_size, self.image_height, self.image_width, 1))
+
+            # slice_size = (original_width - self.image_width) // (64 - 1)
+            
+            # for idx, img in enumerate(X):
+            #     all_tiles=[]
+            #     for i in range(64):
+            #         all_tiles.append(img[:,i*slice_size:(i*slice_size)+self.image_width,:])
+            #     new_X[idx] = np.rot90(np.array(all_tiles).mean(axis=2), 3)
+            
+            # X = new_X
+            # y = X
+
         else:
             if num_tiles > 1: 
                 slice_size = (original_width - self.image_width) // (num_tiles - 1)
@@ -137,14 +159,14 @@ class AudioDataGenerator(tf.keras.utils.Sequence):
                 slice_size = 0
 
             all_tiles = []
-            new_batch = []
             for idx, img in enumerate(X):
                 for i in range(num_tiles):
                     all_tiles.append(img[:,i*slice_size:(i*slice_size)+self.image_width,:])
-                    new_batch.append(batch[idx])
                         
             X = np.array(all_tiles)
             y = X
+
+
         if return_filename:
             return X, y, batch
         else:
