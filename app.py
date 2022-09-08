@@ -93,7 +93,7 @@ except:
 	params_query = ''
 # st.header('Sonufy')
 logo_image, logo_text = st.columns((1,3))
-st.write('<div class=logo>', unsafe_allow_html=True)
+st.write('<div class="logo">', unsafe_allow_html=True)
 with logo_image:
 	st.image('img/logo.png')
 with logo_text:
