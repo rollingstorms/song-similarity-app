@@ -27,25 +27,25 @@ def search(query):
 	sonufy = load_sonufy()
 	progress_bar.progress(10)
 
-	tab1, tab2 = st.tabs(['Song Recommendations', 'Latent Space Visualization'])
+	# tab1, tab2 = st.tabs(['Song Recommendations', 'Latent Space Visualization'])
 	try:
-		with tab1:
-			track, df, latents, this_track= sonufy.search_for_recommendations(query, get_time_and_freq=True)
-			progress_bar.progress(50)
-			display_song('This Song', track_id=track['id'], track_name=track['name'], artist=track["artists"][0]["name"])
-			progress_bar.progress(75)
-			for idx, row in df.iterrows():
-				track_id = row.track_uri.split(':')[-1]
-				display_song(idx+1, 
-							track_id=track_id,
-							track_name=row.track_name,
-							artist=row.artist_name,
-							similarity=row.similarity,
-							time_similarity=row.time_similarity,
-							freq_similarity=row.frequency_similarity)
-			progress_bar.progress(100)
+		# with tab1:
+		track, df, latents, this_track= sonufy.search_for_recommendations(query, get_time_and_freq=True)
+		progress_bar.progress(50)
+		display_song('This Song', track_id=track['id'], track_name=track['name'], artist=track["artists"][0]["name"])
+		progress_bar.progress(75)
+		for idx, row in df.iterrows():
+			track_id = row.track_uri.split(':')[-1]
+			display_song(idx+1, 
+						track_id=track_id,
+						track_name=row.track_name,
+						artist=row.artist_name,
+						similarity=row.similarity,
+						time_similarity=row.time_similarity,
+						freq_similarity=row.frequency_similarity)
+		progress_bar.progress(100)
 
-		with tab2:
+		# with tab2:
 			# fig = plot_genre_space(track, this_track, latents, latent_space)
 			# st.header('Genres in the Sonic Landscape')
 			# st.subheader(track['name'] + ' by ' + track['artists'][0]['name'])
