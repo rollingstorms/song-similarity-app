@@ -24,20 +24,6 @@ The Fourier transform is a method of calculating the amplitude of frequencies pr
 
 ![](img/Wave_to_Mel.png)
 
-Let's plot an example of a mel spectrogram from the same audio sample we plotted above:
-
-# Project Pipeline
-
-- Scrape song information from Spotify's Public API.
-- Convert waveforms from mp3 previews to mel spectrograms.
-- Train an autoencoder network to extract latent features from the audio information.
-- Use UMAP for dimensionality reduction to view the latent space.
-- Make recommendations based on cosine similarity in the latent space.
-- Results and conclusions
-
-Using Spotify's Public API, I scraped song information in a previous notebook. From there I can download a 30-second mp3 preview of each song and convert it to a mel spectrogram to use in a neural network that trains on images. First, let's take a look a the data frame, we will be using to collect the mp3 previews.
-
-In another notebook, I took preview links from the Spotify API, downloaded the mp3s, and converted the sound files to a composite image that contains the mel spectrogram, Mel Frequency Cepstral Coefficient, and Chromagram. I created this composite image with the intent that I might use these other transformations, but for this project, I will only be training the neural network on the mel spectrograms.
 
 # Autoencoder Model
 
@@ -67,25 +53,6 @@ After the input runs through each encoder, the resulting encoded vectors are con
 In the end, the loss in the final model was much lower than in the basic structure, reaching a mean squared error of 0.0037 (training) and 0.0037 (validation) after 20 epochs, with 125,440 images in the training set, and 2560 in the validation set.
 
 We will be building the model here for demonstrative purposes only, as I trained the model in another notebook, and will load the weights from the trained model once it is built.
-
-# Build Latent Space from Encoder
-
-Using a custom class for running inference through the network and saving results, we can construct the latent space for every mel spectrogram we have. We can do this by running the data only through the encoder and receiving a vector the size that we initialized the model with, in this case, 256 dimensions.
-
-# Latent Space EDA - The Sonic Landscape
-
-To explore the abstract landscape created by the latent space of the data through the model, we can use dimensionality reduction. UMAP, like T-SNE, can reduce a multidimensional space into 2 dimensions for visualizing in a plot.
-
-# Get Recommendations
-
-The custom LatentSpace class will search for recommendations using cosine similarity for each vector.
-
-1. First, we will use the Spotify API to search a query.
-2. The API will return the mp3 preview for the first result and run the mel spectrogram through the encoder.
-3. Then we compare cosine similarity on the latent space columns of the entire track database.
-4. Sort the result, and return the top ten highest scores.
-
-![](img/Cosine_similarity.png)
 
 # Results and Conclusions
 
