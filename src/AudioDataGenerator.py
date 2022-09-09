@@ -17,7 +17,8 @@ class AudioDataGenerator(tf.keras.utils.Sequence):
                  test_size=.2,
                  name='prediction',
                  file_list=None,
-                 shorten_factor=1):
+                 shorten_factor=1,
+                 mel_gamma=1):
 
         self.batch_size = batch_size
 
@@ -37,6 +38,8 @@ class AudioDataGenerator(tf.keras.utils.Sequence):
         self.shorten_factor = shorten_factor
 
         self.input_size[1] = self.input_size[1]//shorten_factor
+
+        self.mel_gamma = mel_gamma
         
 
         if file_list == None:
@@ -166,6 +169,8 @@ class AudioDataGenerator(tf.keras.utils.Sequence):
             X = np.array(all_tiles)
             y = X
 
+        #add gamma factor to increase/decrease contrast in mel spectrogram
+        X = X**self.mel_gamma
 
         if return_filename:
             return X, y, batch

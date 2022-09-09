@@ -13,7 +13,8 @@ class AppAudioDataGenerator():
                  shuffle=False,
                  sample_size=None,
                  name='prediction',
-                 shorten_factor=1):
+                 shorten_factor=1,
+                 mel_gamma=1):
 
         self.batch_size = batch_size
 
@@ -31,6 +32,8 @@ class AppAudioDataGenerator():
         self.input_size[1] = self.input_size[1]//shorten_factor
 
         self.dir = directory
+
+        self.mel_gamma = mel_gamma
 
         if self.dir != None:
             self.files = self.__get_files_from_directory()
@@ -107,6 +110,10 @@ class AppAudioDataGenerator():
                         
             X = np.array(all_tiles)
             y = X
+
+        #add gamma factor to increase/decrease contrast in mel spectrogram
+        X = X**self.mel_gamma
+
         if return_filename:
             return X, y, batch
         else:

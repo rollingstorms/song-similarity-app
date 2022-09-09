@@ -37,6 +37,7 @@ class AudioSpectrogramConverter:
         self.start_freq = start_freq  # Hz # What frequency to start sampling our melS from
         self.end_freq = end_freq  # Hz # What frequency to stop sampling our melS from
 
+
         self.mel_filter, self.mel_inversion_filter = create_mel_filter(
             fft_size=self.fft_size,
             n_freq_components=self.n_mel_freq_components,
@@ -118,7 +119,8 @@ class Sonufy:
                  shorten_factor=10,
                  start_freq=20,
                  end_freq=8000,
-                 final_shorten_factor=1):
+                 final_shorten_factor=1,
+                 mel_gamma=1):
 
         self.latent_dims = latent_dims
         
@@ -135,6 +137,8 @@ class Sonufy:
         self.end_freq = end_freq
 
         self.final_shorten_factor = final_shorten_factor
+
+        self.mel_gamma = mel_gamma #mel gamma for increase/decrease contrast in mel spectrogram
 
         self.latent_cols = [f'latent_{i}' for i in range(self.latent_dims)]
 
@@ -310,7 +314,7 @@ class Sonufy:
         #create prediction generator
         input_size = self._get_input_shape(mel_directory)
 
-        self.prediction_generator = AppAudioDataGenerator(batch_size=1, input_size=input_size, output_size=(self.image_height, self.image_width), directory=mel_directory, shuffle=False, sample_size=sample_size, shorten_factor=self.final_shorten_factor)
+        self.prediction_generator = AppAudioDataGenerator(batch_size=1, input_size=input_size, output_size=(self.image_height, self.image_width), directory=mel_directory, shuffle=False, sample_size=sample_size, shorten_factor=self.final_shorten_factor, mel_gamma=self.mel_gamma)
         
         print('Getting predictions from autoencoder...')
         start_time = time.time()
@@ -429,7 +433,7 @@ class Sonufy:
         #create train test generator
         input_size = self._get_input_shape(mel_directory)
 
-        self.train_test_generator = AudioDataGenerator(batch_size=batch_size, input_size=input_size, output_size=(self.image_height, self.image_width), directory=mel_directory, shuffle=True, train_test_split=True, test_size=train_test_split, sample_size=sample_size, shorten_factor=self.final_shorten_factor)
+        self.train_test_generator = AudioDataGenerator(batch_size=batch_size, input_size=input_size, output_size=(self.image_height, self.image_width), directory=mel_directory, shuffle=True, train_test_split=True, test_size=train_test_split, sample_size=sample_size, shorten_factor=self.final_shorten_factor, mel_gamma=self.mel_gamma)
 
         #train
         self.history_ = self.autoencoder.fit(self.train_test_generator.train,
@@ -471,7 +475,7 @@ class Sonufy:
 
             mel = self.asc.convert(link=link, file_id=track['id'])
 
-            prediction_gen = AppAudioDataGenerator(batch_size=1, input_size=(mel.shape[0], mel.shape[0]), output_size=(self.image_height, self.image_width), shorten_factor=self.shorten_factor)
+            prediction_gen = AppAudioDataGenerator(batch_size=1, input_size=(mel.shape[0], mel.shape[0]), output_size=(self.image_height, self.image_width), shorten_factor=self.shorten_factor, mel_gamma=self.mel_gamma)
 
             mel_batch = prediction_gen.get_tensors_from_data(data=mel, num_tiles=self.num_tiles)
             # mel_batch = prediction_gen.get_tensors_from_data(data=mel, num_tiles=None)
