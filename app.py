@@ -31,8 +31,9 @@ def search(query):
 	progress_bar.progress(10)
 
 	tab1, tab2 = st.tabs(['Song Recommendations', 'About Sonufy'])
-	try:
-		with tab1:
+	
+	with tab1:
+		try:
 			track, df, latents, this_track= sonufy.search_for_recommendations(query, get_time_and_freq=True)
 			progress_bar.progress(50)
 			display_song('This Song', track_id=track['id'], track_name=track['name'], artist=track["artists"][0]["name"])
@@ -48,23 +49,25 @@ def search(query):
 							freq_similarity=row.frequency_similarity)
 			progress_bar.progress(100)
 
-		with tab2:
-			readme = Path('readme.md').read_text()
-			st.write(readme)
+		except:
+			st.warning("""No preview for this song or artist on Spotify. Please try a different search.
+			This recommendation system relies on the preview mp3's provided by Spotify's Public API.
+			If there is no mp3 preview, Sonufy can't make a recommendation.""")
 
-			# fig = plot_genre_space(track, this_track, latents, latent_space)
-			# st.header('Genres in the Sonic Landscape')
-			# st.subheader(track['name'] + ' by ' + track['artists'][0]['name'])
-			# st.plotly_chart(fig, use_container_width=True)
-			# st.write('Using dimensionality reduction, basic genres and similar songs can be plotted in a visualization of the latent space that is created by an encoder.')
+	with tab2:
+		readme = Path('readme.md').read_text()
+		st.write(readme)
+
+		# fig = plot_genre_space(track, this_track, latents, latent_space)
+		# st.header('Genres in the Sonic Landscape')
+		# st.subheader(track['name'] + ' by ' + track['artists'][0]['name'])
+		# st.plotly_chart(fig, use_container_width=True)
+		# st.write('Using dimensionality reduction, basic genres and similar songs can be plotted in a visualization of the latent space that is created by an encoder.')
 
 		time.sleep(.5)
 		status.empty()
 
-	except:
-		st.warning("""No preview for this song or artist on Spotify. Please try a different search.
-			This recommendation system relies on the preview mp3's provided by Spotify's Public API.
-			If there is no mp3 preview, Sonufy can't make a recommendation.""")
+	
 
 def display_song(index, track_id, track_name, artist, similarity=None, time_similarity=None, freq_similarity=None):
 	col1, col2, col3 = st.columns((1,3,3))
