@@ -54,8 +54,11 @@ def search(query):
 			This recommendation system relies on the preview mp3's provided by Spotify's Public API.
 			If there is no mp3 preview, Sonufy can't make a recommendation.""")
 
+		time.sleep(.5)
+		status.empty()
+
 	with tab2:
-		readme = Path('readme.md').read_text()
+		readme = Path('README.md').read_text()
 		st.write(readme)
 
 		# fig = plot_genre_space(track, this_track, latents, latent_space)
@@ -63,9 +66,6 @@ def search(query):
 		# st.subheader(track['name'] + ' by ' + track['artists'][0]['name'])
 		# st.plotly_chart(fig, use_container_width=True)
 		# st.write('Using dimensionality reduction, basic genres and similar songs can be plotted in a visualization of the latent space that is created by an encoder.')
-
-		time.sleep(.5)
-		status.empty()
 
 	
 
