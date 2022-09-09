@@ -6,6 +6,8 @@ import plotly.express as px
 import time
 from copy import deepcopy
 
+st.set_page_config(page_title='Sonufy', page_icon='img/sonufy_icon.png', layout="centered", initial_sidebar_state="auto", menu_items=None)
+
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
 def load_sonufy():
 	model_path = 'model'
@@ -99,14 +101,11 @@ def display_song(index, track_id, track_name, artist, similarity=None, time_simi
 try:
 	params = st.experimental_get_query_params()
 	params_query = params['query'][0]
-	title_addon = f' - {params_query}'
 except:
 	params_query = ''
-	title_addon = ''
 # st.header('Sonufy')
 logo_image, logo_text = st.columns((1,3))
 
-st.set_page_config(page_title=f'Sonufy {title_addon}', page_icon='img/sonufy_icon.png', layout="centered", initial_sidebar_state="auto", menu_items=None)
 
 st.write("""<style>.css-ocqkz7:has(div.logo){align-items: center;}
 	.e1tzin5v0:has(div.logo) .etr89bj2{justify-content: center;}</style>""", unsafe_allow_html=True)
