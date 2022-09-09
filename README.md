@@ -1,4 +1,4 @@
-# Sonufy
+# Sonufy = Sonus (Sound) + Spotify
 
 ## A Music Recommendation System Based on Sound Content
 
