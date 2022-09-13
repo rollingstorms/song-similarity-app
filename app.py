@@ -58,7 +58,7 @@ def search(query):
 		status.empty()
 
 	with tab2:
-		readme = Path('READMEx.md').read_text()
+		readme = Path('README.md').read_text()
 		st.write(readme)
 
 		# fig = plot_genre_space(track, this_track, latents, latent_space)
@@ -110,7 +110,6 @@ try:
 	params_query = params['query'][0]
 except:
 	params_query = ''
-# st.header('Sonufy')
 logo_image, logo_text = st.columns((1,3))
 
 
