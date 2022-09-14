@@ -8,6 +8,16 @@ from copy import deepcopy
 from pathlib import Path
 
 st.set_page_config(page_title='Sonufy', page_icon='img/sonufy_icon.png', layout="centered", initial_sidebar_state="auto", menu_items=None)
+st.write('''<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5N2WJTJ4CL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-5N2WJTJ4CL');
+</script>
+''', unsafe_allow_html=True)
 
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
 def load_sonufy():
@@ -115,17 +125,6 @@ logo_image, logo_text = st.columns((1,3))
 
 st.write("""<style>.css-ocqkz7:has(div.logo){align-items: center;}
 	.e1tzin5v0:has(div.logo) .etr89bj2{justify-content: center;}</style>""", unsafe_allow_html=True)
-
-st.write('''<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-5N2WJTJ4CL"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-5N2WJTJ4CL');
-</script>
-''', unsafe_allow_html=True)
 
 with logo_image:
 	st.write('<div class="logo"></div>', unsafe_allow_html=True)
